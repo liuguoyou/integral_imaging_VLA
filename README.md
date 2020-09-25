@@ -1,4 +1,5 @@
 # Virtual Lens Array
+* * *
 This is the implementation of the paper below.
 
 > Gang Li et al.   
@@ -6,4 +7,5 @@ This is the implementation of the paper below.
 > Journal of the Optical Society of Korea 16.4 (2012): 381-385.   
 
 * * *
-## Method proposed by Gang Li et al.
+## Method proposed by Gang Li et al.   
+![Alt text](../proposed_method.png)
