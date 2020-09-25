@@ -8,4 +8,4 @@ This is the implementation of the paper below.
 
 * * *
 ## Method proposed by Gang Li et al.   
-<img src="../method.png"  width="700" height="370">
+![method](https://user-images.githubusercontent.com/55485826/94268406-131c4680-ff78-11ea-95f5-68f69fd3dddb.png)
