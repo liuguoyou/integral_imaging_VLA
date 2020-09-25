@@ -8,4 +8,4 @@ This is the implementation of the paper below.
 
 * * *
 ## Method proposed by Gang Li et al.   
-![Alt text](../proposed_method.png)
+![method](../proposed_method.png)
