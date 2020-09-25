@@ -8,4 +8,4 @@ This is the implementation of the paper below.
 
 * * *
 ## Method proposed by Gang Li et al.   
-![method](./method.png)
+<img src="../method.png"  width="700" height="370">
