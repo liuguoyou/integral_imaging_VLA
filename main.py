@@ -5,7 +5,7 @@ import numpy as np
 
 from PIL import Image
 
-from predict import DepthEstimation
+from depth_networks.predict import DepthEstimation
 from input_stage import InputStage
 from calculation_stage import CalculationStage
 from sub_aperture import SubAperture
@@ -18,13 +18,13 @@ parser.add_argument('--color_path', type=str, default='./inputs/color.png', help
 parser.add_argument('--depth_path', type=str, default='./inputs/depth.png', help='Depth image.')
 parser.add_argument('--mask_path', type=str, default=None, help='Mask image.')
 
-parser.add_argument('--model_path', type=str, default='./networks/model.h5', help='Model file for predicting a depth.')
+parser.add_argument('--model_path', type=str, default='./depth_networks/model.h5', help='Model file for predicting a depth.')
 
 parser.add_argument('--is_masking', action='store_true', help='Check masking or no masking.')
 parser.add_argument('--is_prediction', action='store_true', help='Depth estimation from a RGB image.')
 parser.add_argument('--is_gpu', action='store_true', help='Select calculation system.')
 
-parser.add_argument('--num_of_lenses', type=int, default=12769, help='Number of elemental lenses.')
+parser.add_argument('--num_of_lenses', type=int, default=113, help='Number of elemental lenses.')
 parser.add_argument('--P_D', type=float, default=0.1245, help='Pixel pitch of LCD.')
 parser.add_argument('--P_L', type=float, default=1.992, help='Size of elemental lens.')
 parser.add_argument('--f', type=float, default=10, help='Focal length of elemental lens.')
@@ -62,13 +62,18 @@ def get_input_params():
     """
     inputs = {}
     color = utils.load_image(args.color_path)
+    color_name = args.color_path.split('/')[-1].split('.png')[0]
 
     if args.is_prediction:
-        print('Estimate Depth...')
-        depth_estimation = DepthEstimation()
-        depth = depth_estimation.prediction(args.color_path, args.model_path)
-        utils.save_image(utils.visualize_depth(depth), './intermediate/predicted_depth.png')
-        print('Depth Estimation Done.')
+        if os.path.isfile('./depths/' + color_name + '_depth.npy'):
+            depth = np.load('./depths/' + color_name + '_depth.npy')
+            print('Depth map loaded.')
+        else:
+            print('Estimate Depth...')
+            depth_pred = DepthEstimation()
+            depth = depth_pred.prediction(args.color_path, args.model_path)
+            np.save('./depths/' + color_name + '_depth', depth)
+            print('Depth Estimation Done.')
     else:
         depth = utils.load_image(args.depth_path)
     
@@ -78,6 +83,7 @@ def get_input_params():
         mask = None
 
     inputs['color'] = color
+    inputs['name'] = color_name
     inputs['depth'] = depth
     inputs['mask'] = mask
     inputs['num_of_lenses'] = args.num_of_lenses
@@ -102,10 +108,11 @@ def main():
     cvt_inputs = cvt_mm2pixel(inputs, pitch_of_pixel=inputs['P_D'])
 
     # Convert depth data
-    inputstage = InputStage(int(args.f),
+    inputstage = InputStage(inputs['name'],
+                            int(args.f),
                             int(args.g),
-                            str(args.is_masking),
-                            str(args.is_prediction))
+                            args.is_masking,
+                            args.is_prediction)
     d, P_I, delta_d, color, L = inputstage.convert_depth(inputs['color'],
                                                          cvt_inputs['depth'],
                                                          inputs['mask'],
@@ -126,33 +133,44 @@ def main():
     # Generate elemental images
     print('\nCalculation Stage...')
 
-    calculationstage = CalculationStage(int(args.f),
+    calculationstage = CalculationStage(inputs['name'],
+                                        int(args.f),
                                         int(args.g),
-                                        str(args.is_masking),
-                                        str(args.is_prediction))
-    elem_plane = calculationstage.generate_elemental_imgs_CPU(color, 
-                                                              L,
-                                                              int(cvt_inputs['P_L']),
-                                                              P_I,
-                                                              cvt_inputs['g'],
-                                                              int(np.sqrt(inputs['num_of_lenses'])))
+                                        args.is_masking,
+                                        args.is_prediction)
+    if args.is_gpu:
+        elem_plane = calculationstage.generate_elemental_imgs_GPU(color, 
+                                                                  L,
+                                                                  int(cvt_inputs['P_L']),
+                                                                  P_I,
+                                                                  cvt_inputs['g'],
+                                                                  inputs['num_of_lenses'])
+    else:
+        elem_plane = calculationstage.generate_elemental_imgs_CPU(color, 
+                                                                  L,
+                                                                  int(cvt_inputs['P_L']),
+                                                                  P_I,
+                                                                  cvt_inputs['g'],
+                                                                  inputs['num_of_lenses'])
 
-    print('Calculation Stage Done.')
+    print('Elemental Image Array generated.')
 
     '''
         Generate Sub Aperture
     '''
-    print('Generate sub aperture images...')
+    print('\nGenerate sub aperture images...')
 
-    aperture = SubAperture(int(args.f),
+    aperture = SubAperture(inputs['name'],
+                           int(args.f),
                            int(args.g),
-                           str(args.is_masking),
-                           str(args.is_prediction))
+                           args.is_masking,
+                           args.is_prediction)
     sub_apertures = aperture.generate_sub_apertures(elem_plane,
                                                     int(cvt_inputs['P_L']),
-                                                    int(np.sqrt(inputs['num_of_lenses'])))
+                                                    inputs['num_of_lenses'])
+    print('Sub-Aperture Images generated.')
     
-    print('Done.')
+    print('\nDone.')
 
 
 if __name__ == "__main__":

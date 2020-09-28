@@ -11,8 +11,13 @@ import utils
 
 
 class InputStage(object):
-    def __init__(self, f, g, is_masking, is_prediction):
-        self.path = './intermediate/' + 'F' + str(f) + 'G' + str(g) + 'M_' + is_masking + 'P_' + is_prediction + '/'
+    def __init__(self, name, f, g, is_masking, is_prediction):
+        self.path = './intermediate/' + name + '_F' + str(f) + 'G' + str(g)
+
+        if is_masking:
+            self.path = self.path + 'M'
+        if is_prediction:
+            self.path = self.path + 'P'
 
         if not os.path.isdir(self.path):
             os.mkdir(self.path)
@@ -79,31 +84,7 @@ class InputStage(object):
         if is_masking:
             color, L = utils.extract_roi(color, L, mask)
         
-        utils.save_image(color, self.path + 'color.png')
-        utils.save_image(utils.visualize_depth(L), self.path + 'converted_depth.png')
+        utils.save_image(color, self.path + '/color.png')
+        utils.save_image(utils.visualize_depth(L), self.path + '/converted_depth.png')
 
         return d, P_I, delta_d, color, L
-        
-        # if is_masking:
-        #     L = np.zeros((color.shape[0], color.shape[1]))
-        #     for i in tqdm(range(height), ascii=True, desc='convert_depth'):
-        #         for j in range(width):
-        #             if depth[i, j] != 0:
-        #                 L[i, j] = (d * (depth[depth > 0].max() + depth[depth > 0].min())) / (depth[i, j] * 2)
-
-        #     L[L < converted_depth_min] = converted_depth_min
-        #     L[L > converted_depth_max] = converted_depth_max
-
-        #     # Extract region of interest using mask image
-        #     masked_c, masked_L = utils.extract_roi(color, L, mask)
-            
-        #     utils.save_image(masked_c, self.path + 'masked_color.png')
-        #     utils.save_image(utils.visualize_depth(masked_L), self.path + 'masked_converted_depth.png')
-        #     return d, P_I, delta_d, masked_c, masked_L
-        # else:
-        #     L = (d * (depth.max() + depth.min())) / (depth * 2)
-        #     L[L < converted_depth_min] = converted_depth_min
-        #     L[L > converted_depth_max] = converted_depth_max
-
-        #     utils.save_image(utils.visualize_depth(L), self.path + 'converted_depth.png')
-        #     return d, P_I, delta_d, color, L

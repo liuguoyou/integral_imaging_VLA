@@ -115,4 +115,4 @@ def print_params(inputs, cvt_inputs, d, P_I, delta_d, color, L):
 
     print('\n[Converted min & max depth]')
     print('     Minimum Depth : {:0.4f} pixels'.format(L[L > 0].min()))
-    print('     Maximum Depth : {:0.4f} pixels\n'.format(L[L > 0].max()))
+    print('     Maximum Depth : {:0.4f} pixels'.format(L[L > 0].max()))
